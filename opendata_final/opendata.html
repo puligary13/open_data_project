@@ -1,0 +1,294 @@
+  <!DOCTYPE html>
+<html>
+		<title></title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<meta name="description" content="" />
+		<meta name="keywords" content="" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+  <head>
+  <style>
+	.slidecontainer {
+		width: 100%;
+	}
+
+	.slider {
+		-webkit-appearance: none;
+		width: 100%;
+		height: 25px;
+		background: #d3d3d3;
+		outline: none;
+		opacity: 0.7;
+		-webkit-transition: .2s;
+		transition: opacity .2s;
+	}
+
+	.slider:hover {
+		opacity: 1;
+	}
+
+	.slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 25px;
+		height: 25px;
+		background: #4CAF50;
+		cursor: pointer;
+	}
+
+	.slider::-moz-range-thumb {
+		width: 25px;
+		height: 25px;
+		background: #4CAF50;
+		cursor: pointer;
+	}
+	</style>
+  
+  
+    <style>
+       #map {
+        height: 800px;
+        width: 100%;
+       }
+    </style>
+  </head>
+  <body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<a class="logo" href="index.html"></a>
+				<nav>
+					<a href="#menu">Menu</a>
+				</nav>
+			</header>
+
+		<!-- Nav -->
+			<nav id="menu">
+				<ul class="links">
+					<li><a href="index.html">Home</a></li>
+					<li><a href="opendata.html">map</a></li>
+					<li><a href="generic.html">Generic</a></li>
+				</ul>
+			</nav>
+
+	
+	<div class="slidecontainer">
+	<p>選擇走路時間能到的範圍:</p>
+	<input type="range" min="1" max="120" value="50" onchange = "change()" onchange = "change()" class="slider" id="walk">
+	<p>時間: <span id="demo_walk"></span> 分鐘</p>
+	</div>
+	
+	<div class="slidecontainer">
+	<p>選擇捷運時間能到的範圍:</p>
+	<input type="range" min="1" max="120" value="50"  class="slider" id="mrt">
+	<p>時間: <span id="demo_mrt"></span> 分鐘</p>
+	</div>
+	
+	<div class="slidecontainer">
+	<p>選擇公車時間能到的範圍:</p>
+	<input type="range" min="1" max="120" value="50"class="slider" id="bus">
+	<p>時間: <span id="demo_bus"></span> 分鐘</p>
+	</div>
+	
+    <div id="map"></div>
+    <script>
+        var left;
+        var right;
+        var top;
+        var down;
+	var marker_left;
+	var marker_right;
+	var marker_top;
+	var marker_down;
+	var map;
+	var marker;
+    var marker_pos;
+	var markers = [];
+	var cityCircle;
+	var cityCircles = [];
+	var slider_walk = document.getElementById("walk");
+	var output_walk = document.getElementById("demo_walk");
+	output_walk.innerHTML = slider_walk.value;
+	var slider_mrt = document.getElementById("mrt");
+	var output_mrt = document.getElementById("demo_mrt");
+	output_mrt.innerHTML = slider_mrt.value;
+	var slider_bus = document.getElementById("bus");
+	var output_bus = document.getElementById("demo_bus");
+	output_bus.innerHTML = slider_bus.value;
+
+	slider_walk.oninput = function() {
+	output_walk.innerHTML = this.value;
+    output_mrt.innerHTML = this.value;
+    document.getElementById("mrt").value = this.value;
+    output_bus.innerHTML = this.value;
+    document.getElementById("bus").value = this.value;
+	}
+	slider_mrt.oninput = function() {
+	output_mrt.innerHTML = this.value;
+	}
+	slider_bus.oninput = function() {
+	output_bus.innerHTML = this.value;
+	}
+	
+	function change() {
+    
+    clearCircle();
+    clearMarkers();
+    marker = new google.maps.Marker({
+    position: marker_pos,
+    map: map
+    });
+    markers.push(marker);
+    marker_right = new google.maps.Marker({
+    position: right,
+    map: map
+    });
+    markers.push(marker_right);
+    marker_left = new google.maps.Marker({
+    position: left,
+    map: map
+    });
+    markers.push(marker_left);
+    marker_top = new google.maps.Marker({
+    position: top,
+    map: map
+    });
+    markers.push(marker_top);
+    marker_down = new google.maps.Marker({
+    position: down,
+    map: map
+    });
+    markers.push(marker_down);
+
+	  cityCircle = new google.maps.Circle({
+      strokeColor: '#FF0000',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: '#FF0000',
+      fillOpacity: 0.35,
+      map: map,
+      center: marker.position,
+      radius: slider_walk.value*80
+    });
+	cityCircles.push(cityCircle);
+	}
+      function initMap() {
+        var ntust = {lat: 25.014245, lng: 121.541503};
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 15,
+          center: ntust
+        });
+        var marker = new google.maps.Marker({
+          position: ntust,
+          map: map
+        });
+		markers.push(marker);
+		map.data.loadGeoJson('100demo.json');
+		map.data.setStyle({visible: false});
+		google.maps.event.addListener(map, 'click', function(event) {
+		deleteMarkers();
+		deletecircles();
+		placeMarker(map, event.latLng);
+		
+		});
+      }
+	function placeMarker(map, location) {
+		
+		marker = new google.maps.Marker({
+		position: location,
+		map: map
+	});
+    marker_pos = new google.maps.LatLng(location.lat(),location.lng());
+    markers.push(marker);
+    left = new google.maps.LatLng(location.lat()-slider_walk.value*80/110574,location.lng());
+    right = new google.maps.LatLng(location.lat()+slider_walk.value*80/110574,location.lng());
+    top = new google.maps.LatLng(location.lat(),location.lng()+slider_walk.value*80/111320*Math.cos(location.lat()));
+    down = new google.maps.LatLng(location.lat(),location.lng()-slider_walk.value*80/111320*Math.cos(location.lat()));
+    marker_right = new google.maps.Marker({
+    position: right,
+    map: map
+    });
+    markers.push(marker_right);
+    marker_left = new google.maps.Marker({
+    position: left,
+    map: map
+    });
+    markers.push(marker_left);
+    marker_top = new google.maps.Marker({
+    position: top,
+    map: map
+    });
+    markers.push(marker_top);
+    marker_down = new google.maps.Marker({
+    position: down,
+    map: map
+    });
+    markers.push(marker_down);
+  
+	 cityCircle = new google.maps.Circle({
+      strokeColor: '#FF0000',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: '#FF0000',
+      fillOpacity: 0.35,
+      map: map,
+      center: {lat: location.lat(), lng: location.lng()},
+      radius: slider_walk.value*80
+    });
+	cityCircles.push(cityCircle);
+	var infowindow = new google.maps.InfoWindow({
+		content: 'Lat: ' + location.lat() + '<br>Lng: ' + location.lng()
+	});
+	infowindow.open(map,marker);
+	}
+	// Sets the map on all markers in the array.
+      function setMapOnAll(map) {
+        for (var i = 0; i < markers.length; i++) {
+          markers[i].setMap(map);
+        }
+		for(var i = 0; i < cityCircles.length; i++) {
+		cityCircles[i].setMap(map);
+		}
+      }
+	function clearCircle() {
+		for(var i = 0; i < cityCircles.length; i++) {
+			cityCircles[i].setMap(null);
+			}
+	}
+      // Removes the markers from the map, but keeps them in the array.
+      function clearMarkers() {
+        for (var i = 0; i < markers.length; i++) {
+          markers[i].setMap(null);
+        }
+      }
+	function deleteMarkers() {
+        clearMarkers();
+        markers = [];
+      }
+	  function deletecircles() {
+		clearCircle();
+		cityCircles = [];
+	  }
+	
+    function addMarker(location, map) {
+        // Add the marker at the clicked location, and add the next-available label
+        // from the array of alphabetical characters.
+        var marker = new google.maps.Marker({
+                                            position: location,
+                                            map: map
+                                            });
+        markers.push(marker);
+    }
+	  
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ9mL5mbmuTCNGunaosws3VeCHhI5ADFo&callback=initMap">
+    </script>
+	<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+  </body>
+</html>
